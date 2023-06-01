@@ -21,7 +21,9 @@ func (t TextAnimator) textAnimate() {
 	for _, char := range t.text {
 		str = str + string(char)
 		t.textChannel <- str
-		fmt.Printf("\r%s", str)
+		if char == 10 {
+			str = "\r"
+		}
 		time.Sleep(t.textTime)
 	}
 }
@@ -44,7 +46,11 @@ func (t TextAnimator) PrintSequential() {
 	go t.preloader()
 
 	for str = range t.textChannel {
-		fmt.Printf("\r%s%c", str, <-t.preloaderChannel)
+		if str[len(str)-1] == 10 {
+			fmt.Printf("\r%s", str)
+		} else {
+			fmt.Printf("\r%s%c", str, <-t.preloaderChannel)
+		}
 	}
 
 	_, ok := <-t.textChannel
