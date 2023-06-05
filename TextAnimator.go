@@ -6,72 +6,39 @@ import (
 )
 
 type TextAnimator struct {
-	text             string
-	preloaderParts   string
-	textChannel      chan string
-	preloaderChannel chan rune
-	preloaderTime    time.Duration
-	textTime         time.Duration
-}
-
-func (t TextAnimator) textAnimate() {
-	defer close(t.textChannel)
-	var str string
-
-	for _, char := range t.text {
-		str = str + string(char)
-		t.textChannel <- str
-		if char == 10 {
-			str = "\r"
-		}
-		time.Sleep(t.textTime)
-	}
-}
-
-func (t TextAnimator) preloader() {
-	defer close(t.preloaderChannel)
-	for {
-		for _, r := range t.preloaderParts {
-			t.preloaderChannel <- r
-			time.Sleep(t.preloaderTime)
-		}
-	}
+	text           string
+	preloaderParts string
+	textTime       time.Duration
 }
 
 func (t TextAnimator) PrintSequential() {
 
 	var str string
+	var preloadCounter int
 
-	go t.textAnimate()
-	go t.preloader()
-
-	for str = range t.textChannel {
-		if str[len(str)-1] == 10 {
-			fmt.Printf("\r%s", str)
-		} else {
-			fmt.Printf("\r%s%c", str, <-t.preloaderChannel)
+	for _, char := range t.text {
+		str += string(char)
+		fmt.Printf("\r%s%c", str, t.preloaderParts[preloadCounter])
+		if char == 10 {
+			str = "\r"
 		}
+
+		if preloadCounter >= len(t.preloaderParts)-1 {
+			preloadCounter = 0
+		} else {
+			preloadCounter++
+		}
+		time.Sleep(t.textTime)
 	}
-
-	_, ok := <-t.textChannel
-
-	if !ok {
-		fmt.Printf("\r%s%s", str, " \n")
-	}
-
-	time.Sleep(5 * time.Second)
 }
 
 func NewTextAnimator(text string) TextAnimator {
 	preloadParts := "-\\|/"
 
 	t := TextAnimator{
-		text:             text,
-		preloaderParts:   preloadParts,
-		textChannel:      make(chan string),
-		preloaderChannel: make(chan rune),
-		preloaderTime:    100 * time.Microsecond,
-		textTime:         50 * time.Millisecond,
+		text:           text,
+		preloaderParts: preloadParts,
+		textTime:       75 * time.Millisecond,
 	}
 
 	return t
